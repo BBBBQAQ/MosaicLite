@@ -11,6 +11,27 @@ struct ImageProcessorTests {
         #expect(result.pixelSize == CGSize(width: 160, height: 80))
     }
 
+    @Test("连续修改尺寸时只显示最后一次后台预览")
+    @MainActor
+    func resizePreviewKeepsLatestRequest() async throws {
+        let model = EditorModel()
+        let item = ImageItem(image: makeImage(width: 100, height: 80, color: .systemBlue), name: "预览")
+        model.images = [item]
+        model.selectedID = item.id
+        model.lockAspect = false
+
+        model.targetWidth = 900
+        model.targetHeight = 720
+        model.previewResize()
+        model.targetWidth = 50
+        model.targetHeight = 40
+        model.previewResize()
+
+        try await Task.sleep(for: .milliseconds(250))
+
+        #expect(model.outputImage?.pixelSize == CGSize(width: 50, height: 40))
+    }
+
     @Test("横向拼接尺寸正确")
     func horizontalStitch() throws {
         let images = [
@@ -109,6 +130,53 @@ struct ImageProcessorTests {
 
         #expect(model.images[0].image.pixelSize == CGSize(width: 50, height: 40))
         #expect(model.images[1].image.pixelSize == CGSize(width: 30, height: 20))
+    }
+
+    @Test("批量尺寸处理可以整体撤销和重做")
+    @MainActor
+    func batchResizeSupportsUndoAndRedo() {
+        let model = EditorModel()
+        model.images = [
+            ImageItem(image: makeImage(width: 100, height: 80, color: .systemRed), name: "A"),
+            ImageItem(image: makeImage(width: 60, height: 40, color: .systemBlue), name: "B")
+        ]
+        model.selectedID = model.images.first?.id
+        model.resizeBatchMode = true
+        model.resizeUnit = .percent
+        model.percent = 50
+
+        model.applyResize()
+        model.undo()
+
+        #expect(model.images[0].image.pixelSize == CGSize(width: 100, height: 80))
+        #expect(model.images[1].image.pixelSize == CGSize(width: 60, height: 40))
+
+        model.redo()
+
+        #expect(model.images[0].image.pixelSize == CGSize(width: 50, height: 40))
+        #expect(model.images[1].image.pixelSize == CGSize(width: 30, height: 20))
+    }
+
+    @Test("切换图片后撤销不会把上一张图片写入当前图片")
+    @MainActor
+    func undoRestoresTheEditedImageCollection() {
+        let model = EditorModel()
+        let first = ImageItem(image: makeImage(width: 100, height: 80, color: .systemRed), name: "A")
+        let second = ImageItem(image: makeImage(width: 60, height: 40, color: .systemBlue), name: "B")
+        model.images = [first, second]
+        model.selectedID = first.id
+        model.resizeUnit = .pixels
+        model.lockAspect = false
+        model.targetWidth = 50
+        model.targetHeight = 40
+        model.applyResize()
+        model.select(second)
+
+        model.undo()
+
+        #expect(model.images[0].image.pixelSize == CGSize(width: 100, height: 80))
+        #expect(model.images[1].image.pixelSize == CGSize(width: 60, height: 40))
+        #expect(model.selectedID == first.id)
     }
 
     @Test("批量模式使用追加导入逻辑")
