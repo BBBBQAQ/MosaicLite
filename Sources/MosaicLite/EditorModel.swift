@@ -47,9 +47,18 @@ final class EditorModel: ObservableObject {
     @Published private(set) var outputImage: NSImage?
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
+    @Published var exportErrorMessage: String?
 
-    private var history: [NSImage] = []
-    private var future: [NSImage] = []
+    private struct EditorSnapshot {
+        var images: [ImageItem]
+        var selectedID: UUID?
+    }
+
+    private let historyLimit = 12
+    private var history: [EditorSnapshot] = []
+    private var future: [EditorSnapshot] = []
+    private var previewTask: Task<Void, Never>?
+    private var previewRequestID = UUID()
 
     var selectedImage: NSImage? {
         images.first(where: { $0.id == selectedID })?.image ?? images.first?.image
@@ -90,6 +99,7 @@ final class EditorModel: ObservableObject {
             strokes.removeAll()
             updateUndoState()
         case .add:
+            recordCurrentState()
             images.append(contentsOf: additions)
             selectedID = selectedID ?? additions.first?.id
         }
@@ -104,6 +114,7 @@ final class EditorModel: ObservableObject {
     }
 
     func remove(_ item: ImageItem) {
+        recordCurrentState()
         images.removeAll { $0.id == item.id }
         if selectedID == item.id { selectedID = images.first?.id }
         strokes.removeAll()
@@ -121,6 +132,7 @@ final class EditorModel: ObservableObject {
               let targetIndex = images.firstIndex(where: { $0.id == targetID })
         else { return }
 
+        recordCurrentState()
         let movingItem = images.remove(at: sourceIndex)
         images.insert(movingItem, at: min(targetIndex, images.count))
         previewStitch()
@@ -153,13 +165,23 @@ final class EditorModel: ObservableObject {
     }
 
     func previewResize() {
-        guard let source = selectedImage else { outputImage = nil; return }
+        guard let source = selectedImage, let sourceCG = source.cgImageValue else {
+            cancelPreview()
+            outputImage = nil
+            return
+        }
         let dimensions = resizeDimensions(for: source)
-        outputImage = ImageProcessor.resize(
-            source,
-            width: dimensions.width,
-            height: dimensions.height
-        )
+        schedulePreview {
+            let backgroundSource = NSImage(
+                cgImage: sourceCG,
+                size: NSSize(width: sourceCG.width, height: sourceCG.height)
+            )
+            return ImageProcessor.resize(
+                backgroundSource,
+                width: dimensions.width,
+                height: dimensions.height
+            )?.cgImageValue
+        }
     }
 
     private func resizeDimensions(for image: NSImage) -> (width: Int, height: Int) {
@@ -179,9 +201,23 @@ final class EditorModel: ObservableObject {
 
     func applyResize() {
         guard resizeBatchMode, images.count > 1 else {
-            commitCurrent()
+            cancelPreview()
+            guard let source = selectedImage,
+                  let index = images.firstIndex(where: { $0.id == selectedID })
+            else { return }
+            let dimensions = resizeDimensions(for: source)
+            guard let resized = ImageProcessor.resize(
+                source,
+                width: dimensions.width,
+                height: dimensions.height
+            ) else { return }
+            recordCurrentState()
+            images[index].image = resized
+            outputImage = resized
             return
         }
+        cancelPreview()
+        recordCurrentState()
         for index in images.indices {
             let dimensions = resizeDimensions(for: images[index].image)
             if let resized = ImageProcessor.resize(
@@ -192,15 +228,58 @@ final class EditorModel: ObservableObject {
                 images[index].image = resized
             }
         }
-        history.removeAll()
-        future.removeAll()
         outputImage = selectedImage
         updateUndoState()
     }
 
     func previewWatermark() {
-        guard let source = selectedImage else { outputImage = nil; return }
-        outputImage = renderWatermark(on: source)
+        guard let source = selectedImage, let sourceCG = source.cgImageValue else {
+            cancelPreview()
+            outputImage = nil
+            return
+        }
+        let kind = watermarkKind
+        let text = watermarkText
+        let opacity = watermarkOpacity
+        let fontSize = watermarkFontSize
+        let spacing = watermarkSpacing
+        let angle = watermarkAngle
+        let logoCG = watermarkLogo?.cgImageValue
+        let logoScale = watermarkLogoScale
+        let position = watermarkPosition
+        let padding = watermarkPadding
+
+        schedulePreview {
+            let backgroundSource = NSImage(
+                cgImage: sourceCG,
+                size: NSSize(width: sourceCG.width, height: sourceCG.height)
+            )
+            switch kind {
+            case .text:
+                return ImageProcessor.textWatermark(
+                    backgroundSource,
+                    text: text,
+                    opacity: opacity,
+                    fontSize: fontSize,
+                    spacing: spacing,
+                    angle: angle
+                )?.cgImageValue
+            case .logo:
+                guard let logoCG else { return sourceCG }
+                let backgroundLogo = NSImage(
+                    cgImage: logoCG,
+                    size: NSSize(width: logoCG.width, height: logoCG.height)
+                )
+                return ImageProcessor.logoWatermark(
+                    backgroundSource,
+                    logo: backgroundLogo,
+                    opacity: opacity,
+                    scale: logoScale,
+                    position: position,
+                    padding: padding
+                )?.cgImageValue
+            }
+        }
     }
 
     private func renderWatermark(on image: NSImage) -> NSImage? {
@@ -229,16 +308,23 @@ final class EditorModel: ObservableObject {
 
     func applyWatermark() {
         guard watermarkBatchMode, images.count > 1 else {
-            commitCurrent()
+            cancelPreview()
+            guard let source = selectedImage,
+                  let index = images.firstIndex(where: { $0.id == selectedID }),
+                  let result = renderWatermark(on: source)
+            else { return }
+            recordCurrentState()
+            images[index].image = result
+            outputImage = result
             return
         }
+        cancelPreview()
+        recordCurrentState()
         for index in images.indices {
             if let result = renderWatermark(on: images[index].image) {
                 images[index].image = result
             }
         }
-        history.removeAll()
-        future.removeAll()
         outputImage = selectedImage
         updateUndoState()
     }
@@ -264,15 +350,16 @@ final class EditorModel: ObservableObject {
     }
 
     func previewCrop() {
+        cancelPreview()
         outputImage = selectedImage
     }
 
     func applyCrop() {
+        cancelPreview()
         guard let source = selectedImage,
               let cropped = ImageProcessor.crop(source, normalizedRect: cropRect),
               let index = images.firstIndex(where: { $0.id == selectedID }) else { return }
-        history.append(images[index].image)
-        future.removeAll()
+        recordCurrentState()
         images[index].image = cropped
         outputImage = cropped
         targetWidth = cropped.pixelSize.width
@@ -287,28 +374,82 @@ final class EditorModel: ObservableObject {
     }
 
     func previewMosaic() {
-        guard let source = selectedImage else { outputImage = nil; return }
-        outputImage = ImageProcessor.mosaic(
-            source,
-            strokes: strokes,
-            style: mosaicStyle,
-            intensity: mosaicIntensity,
-            brushSize: brushSize
-        )
+        guard let source = selectedImage, let sourceCG = source.cgImageValue else {
+            cancelPreview()
+            outputImage = nil
+            return
+        }
+        let currentStrokes = strokes
+        let style = mosaicStyle
+        let intensity = mosaicIntensity
+        let size = brushSize
+        schedulePreview(delayMilliseconds: 0) {
+            let backgroundSource = NSImage(
+                cgImage: sourceCG,
+                size: NSSize(width: sourceCG.width, height: sourceCG.height)
+            )
+            return ImageProcessor.mosaic(
+                backgroundSource,
+                strokes: currentStrokes,
+                style: style,
+                intensity: intensity,
+                brushSize: size
+            )?.cgImageValue
+        }
+    }
+
+    func applyMosaic() {
+        cancelPreview()
+        guard let source = selectedImage,
+              let index = images.firstIndex(where: { $0.id == selectedID }),
+              let result = ImageProcessor.mosaic(
+                source,
+                strokes: strokes,
+                style: mosaicStyle,
+                intensity: mosaicIntensity,
+                brushSize: brushSize
+              )
+        else { return }
+        recordCurrentState()
+        images[index].image = result
+        outputImage = result
+        strokes.removeAll()
     }
 
     func previewStitch() {
-        let color = NSColor(stitchBackground)
-        outputImage = ImageProcessor.stitch(
-            images.map(\.image),
-            direction: stitchDirection,
-            spacing: stitchSpacing,
-            background: color
-        )
+        let sourceImages = images.compactMap(\.image.cgImageValue)
+        guard !sourceImages.isEmpty else {
+            cancelPreview()
+            outputImage = nil
+            return
+        }
+        let direction = stitchDirection
+        let spacing = stitchSpacing
+        let background = NSColor(stitchBackground).cgColor
+        schedulePreview {
+            let backgroundImages = sourceImages.map {
+                NSImage(cgImage: $0, size: NSSize(width: $0.width, height: $0.height))
+            }
+            return ImageProcessor.stitch(
+                backgroundImages,
+                direction: direction,
+                spacing: spacing,
+                background: NSColor(cgColor: background) ?? .white
+            )?.cgImageValue
+        }
     }
 
     func applyStitch() {
-        guard images.count >= 2, let composite = outputImage else { return }
+        cancelPreview()
+        guard images.count >= 2,
+              let composite = ImageProcessor.stitch(
+                images.map(\.image),
+                direction: stitchDirection,
+                spacing: stitchSpacing,
+                background: NSColor(stitchBackground)
+              )
+        else { return }
+        recordCurrentState()
         let item = ImageItem(image: composite, name: "拼接图")
         images = [item]
         selectedID = item.id
@@ -317,36 +458,58 @@ final class EditorModel: ObservableObject {
         targetHeight = composite.pixelSize.height
         strokes.removeAll()
         showsCropSelection = false
-        history.removeAll()
-        future.removeAll()
-        updateUndoState()
-    }
-
-    func commitCurrent() {
-        guard let outputImage, let index = images.firstIndex(where: { $0.id == selectedID }) else { return }
-        history.append(images[index].image)
-        future.removeAll()
-        images[index].image = outputImage
-        strokes.removeAll()
         updateUndoState()
     }
 
     func undo() {
-        guard let previous = history.popLast(),
-              let index = images.firstIndex(where: { $0.id == selectedID }) else { return }
-        future.append(images[index].image)
-        images[index].image = previous
-        outputImage = previous
+        guard let previous = history.popLast() else { return }
+        future.append(currentSnapshot())
+        restore(previous)
         updateUndoState()
     }
 
     func redo() {
-        guard let next = future.popLast(),
-              let index = images.firstIndex(where: { $0.id == selectedID }) else { return }
-        history.append(images[index].image)
-        images[index].image = next
-        outputImage = next
+        guard let next = future.popLast() else { return }
+        appendToHistory(currentSnapshot())
+        restore(next)
         updateUndoState()
+    }
+
+    private func currentSnapshot() -> EditorSnapshot {
+        EditorSnapshot(images: images, selectedID: selectedID)
+    }
+
+    private func recordCurrentState() {
+        appendToHistory(currentSnapshot())
+        future.removeAll()
+        updateUndoState()
+    }
+
+    private func appendToHistory(_ snapshot: EditorSnapshot) {
+        history.append(snapshot)
+        if history.count > historyLimit {
+            history.removeFirst(history.count - historyLimit)
+        }
+    }
+
+    private func restore(_ snapshot: EditorSnapshot) {
+        cancelPreview()
+        images = snapshot.images
+        selectedID = snapshot.selectedID.flatMap { id in
+            images.contains(where: { $0.id == id }) ? id : nil
+        } ?? images.first?.id
+        strokes.removeAll()
+        showsCropSelection = false
+
+        if tool == .stitch, images.count > 1 {
+            previewStitch()
+        } else {
+            outputImage = selectedImage
+        }
+        if let image = selectedImage {
+            targetWidth = image.pixelSize.width
+            targetHeight = image.pixelSize.height
+        }
     }
 
     private func updateUndoState() {
@@ -361,6 +524,8 @@ final class EditorModel: ObservableObject {
             exportBatchImages()
             return
         }
+        cancelPreview()
+        outputImage = renderCurrentSynchronously()
         guard let outputImage, let cgImage = outputImage.cgImageValue else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png, .jpeg]
@@ -374,7 +539,15 @@ final class EditorModel: ObservableObject {
             using: isJPEG ? .jpeg : .png,
             properties: isJPEG ? [.compressionFactor: 0.92] : [:]
         )
-        try? data?.write(to: url)
+        guard let data else {
+            exportErrorMessage = "无法生成图片数据，请尝试更换导出格式。"
+            return
+        }
+        do {
+            try data.write(to: url, options: .atomic)
+        } catch {
+            exportErrorMessage = "无法保存图片：\(error.localizedDescription)"
+        }
     }
 
     private func exportBatchImages() {
@@ -385,12 +558,88 @@ final class EditorModel: ObservableObject {
         panel.prompt = "选择导出文件夹"
         guard panel.runModal() == .OK, let directory = panel.url else { return }
 
+        var failedNames: [String] = []
         for (index, item) in images.enumerated() {
-            guard let cgImage = item.image.cgImageValue else { continue }
+            guard let cgImage = item.image.cgImageValue else {
+                failedNames.append(item.name)
+                continue
+            }
             let safeName = item.name.replacingOccurrences(of: "/", with: "-")
             let url = directory.appendingPathComponent("\(safeName)-处理后-\(index + 1).png")
             let representation = NSBitmapImageRep(cgImage: cgImage)
-            try? representation.representation(using: .png, properties: [:])?.write(to: url)
+            guard let data = representation.representation(using: .png, properties: [:]) else {
+                failedNames.append(item.name)
+                continue
+            }
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                failedNames.append(item.name)
+            }
         }
+        if !failedNames.isEmpty {
+            exportErrorMessage = "以下图片导出失败：\(failedNames.joined(separator: "、"))"
+        }
+    }
+
+    private func renderCurrentSynchronously() -> NSImage? {
+        guard let source = selectedImage else { return nil }
+        switch tool {
+        case .resize:
+            let dimensions = resizeDimensions(for: source)
+            return ImageProcessor.resize(source, width: dimensions.width, height: dimensions.height)
+        case .crop:
+            return source
+        case .mosaic:
+            return ImageProcessor.mosaic(
+                source,
+                strokes: strokes,
+                style: mosaicStyle,
+                intensity: mosaicIntensity,
+                brushSize: brushSize
+            )
+        case .watermark:
+            return renderWatermark(on: source)
+        case .stitch:
+            return ImageProcessor.stitch(
+                images.map(\.image),
+                direction: stitchDirection,
+                spacing: stitchSpacing,
+                background: NSColor(stitchBackground)
+            )
+        }
+    }
+
+    private func schedulePreview(
+        delayMilliseconds: UInt64 = 45,
+        render: @escaping @Sendable () -> CGImage?
+    ) {
+        cancelPreview()
+        let requestID = UUID()
+        previewRequestID = requestID
+        previewTask = Task { [weak self] in
+            if delayMilliseconds > 0 {
+                try? await Task.sleep(for: .milliseconds(delayMilliseconds))
+            }
+            guard !Task.isCancelled else { return }
+            let rendered = await Task.detached(priority: .userInitiated) {
+                render()
+            }.value
+            guard !Task.isCancelled,
+                  let self,
+                  self.previewRequestID == requestID,
+                  let rendered
+            else { return }
+            self.outputImage = NSImage(
+                cgImage: rendered,
+                size: NSSize(width: rendered.width, height: rendered.height)
+            )
+        }
+    }
+
+    private func cancelPreview() {
+        previewTask?.cancel()
+        previewTask = nil
+        previewRequestID = UUID()
     }
 }

@@ -39,6 +39,17 @@ struct ContentView: View {
             }
             model.refreshOutput()
         }
+        .alert(
+            "导出失败",
+            isPresented: Binding(
+                get: { model.exportErrorMessage != nil },
+                set: { if !$0 { model.exportErrorMessage = nil } }
+            )
+        ) {
+            Button("好") { model.exportErrorMessage = nil }
+        } message: {
+            Text(model.exportErrorMessage ?? "请稍后重试。")
+        }
     }
 }
 

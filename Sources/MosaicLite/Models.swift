@@ -21,20 +21,20 @@ enum EditorTool: String, CaseIterable, Identifiable {
     }
 }
 
-enum ResizeUnit: String, CaseIterable, Identifiable {
+enum ResizeUnit: String, CaseIterable, Identifiable, Sendable {
     case pixels = "像素"
     case percent = "百分比"
     var id: String { rawValue }
 }
 
-enum MosaicStyle: String, CaseIterable, Identifiable {
+enum MosaicStyle: String, CaseIterable, Identifiable, Sendable {
     case pixel = "经典像素"
     case crystal = "晶格"
     case blur = "柔和模糊"
     var id: String { rawValue }
 }
 
-enum MosaicBrush: String, CaseIterable, Identifiable {
+enum MosaicBrush: String, CaseIterable, Identifiable, Sendable {
     case rectangle = "框选"
     case freehand = "手涂"
     var id: String { rawValue }
@@ -44,7 +44,7 @@ enum MosaicBrush: String, CaseIterable, Identifiable {
     }
 }
 
-enum StitchDirection: String, CaseIterable, Identifiable {
+enum StitchDirection: String, CaseIterable, Identifiable, Sendable {
     case horizontal = "横向"
     case vertical = "纵向"
     var id: String { rawValue }
@@ -55,13 +55,13 @@ enum ImageImportBehavior: Equatable {
     case add
 }
 
-enum WatermarkKind: String, CaseIterable, Identifiable {
+enum WatermarkKind: String, CaseIterable, Identifiable, Sendable {
     case text = "满图文字"
     case logo = "自定义 Logo"
     var id: String { rawValue }
 }
 
-enum WatermarkPosition: String, CaseIterable, Identifiable {
+enum WatermarkPosition: String, CaseIterable, Identifiable, Sendable {
     case topLeft = "左上"
     case topRight = "右上"
     case center = "居中"
@@ -77,7 +77,7 @@ struct ImageItem: Identifiable {
     var name: String
 }
 
-struct MosaicStroke: Identifiable {
+struct MosaicStroke: Identifiable, Sendable {
     let id = UUID()
     var points: [CGPoint]
     var isRectangle: Bool

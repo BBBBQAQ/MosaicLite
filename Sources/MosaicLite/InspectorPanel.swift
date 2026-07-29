@@ -207,7 +207,7 @@ private struct MosaicControls: View {
             }
 
             PrimaryAction(title: "应用打码", icon: "checkmark.shield") {
-                model.commitCurrent()
+                model.applyMosaic()
             }
             .disabled(model.strokes.isEmpty)
         }
