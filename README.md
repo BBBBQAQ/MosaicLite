@@ -46,7 +46,7 @@ MosaicLite 使用 SwiftUI、AppKit、Core Graphics 与 Core Image 构建。图�
 
 ## 系统要求
 
-- macOS 15 或更高版本
+- macOS 15 或更高版本（支持 Apple Silicon 与 Intel Mac）
 - Xcode 16 或更高版本（从源码构建）
 
 ## 从源码运行
@@ -60,7 +60,16 @@ MosaicLite 使用 SwiftUI、AppKit、Core Graphics 与 Core Image 构建。图�
 open outputs/MosaicLite.app
 ```
 
-脚本会生成使用本地临时签名的 `outputs/MosaicLite.app`。首次直接打开本地构建版本时，macOS 可能显示来源提示。
+脚本会生成支持 Apple Silicon 与 Intel Mac、使用本地临时签名的
+`outputs/MosaicLite.app`。首次直接打开本地构建版本时，macOS 可能显示来源提示。
+
+生成经过签名完整性检查的发布压缩包：
+
+```bash
+./scripts/package-release.sh
+```
+
+正式对外分发仍建议使用 Apple Developer ID 签名并完成公证。
 
 ## 测试
 
