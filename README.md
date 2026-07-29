@@ -10,6 +10,27 @@
 
 MosaicLite 使用 SwiftUI、AppKit、Core Graphics 与 Core Image 构建。图片处理全部在本机完成，不上传图片，也不依赖网络服务。
 
+## 界面预览
+
+<p align="center">
+  <img src="docs/screenshots/resize.png" width="100%" alt="MosaicLite 尺寸调整界面">
+</p>
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/crop.png" alt="MosaicLite 自由裁切界面">
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/stitch.png" alt="MosaicLite 图片拼接界面">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">拖动边缘与四角自由裁切</td>
+    <td align="center">横向、纵向拼接与拖拽排序</td>
+  </tr>
+</table>
+
 ## 功能
 
 - 按像素或百分比等比例调整尺寸
