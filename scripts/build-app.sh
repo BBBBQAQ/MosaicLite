@@ -20,6 +20,8 @@ CLANG_MODULE_CACHE_PATH="$work_dir/module-cache" \
 swift build \
   --disable-sandbox \
   --configuration release \
+  --arch arm64 \
+  --arch x86_64 \
   --package-path "$project_dir" \
   --cache-path "$work_dir/swift-cache" \
   --config-path "$work_dir/swift-config" \
@@ -30,7 +32,7 @@ swift build \
 
 rm -rf "$app_dir"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
-cp "$work_dir/release-build/release/MosaicLite" "$app_dir/Contents/MacOS/MosaicLite"
+cp "$work_dir/release-build/apple/Products/Release/MosaicLite" "$app_dir/Contents/MacOS/MosaicLite"
 cp "$project_dir/Resources/Info.plist" "$app_dir/Contents/Info.plist"
 
 xcrun actool \
@@ -44,9 +46,11 @@ xcrun actool \
 cp "$asset_build_dir/AppIcon.icns" "$app_dir/Contents/Resources/AppIcon.icns"
 cp "$asset_build_dir/Assets.car" "$app_dir/Contents/Resources/Assets.car"
 chmod +x "$app_dir/Contents/MacOS/MosaicLite"
-xattr -cr "$app_dir"
-xattr -d com.apple.FinderInfo "$app_dir" 2>/dev/null || true
 
-codesign --force --deep --sign - "$app_dir"
-xattr -d com.apple.FinderInfo "$app_dir" 2>/dev/null || true
+# Finder 与云盘扩展属性会在压缩时变成 ._* 文件，并使签名失效。
+xattr -cr "$app_dir"
+
+codesign --force --sign - "$app_dir"
+codesign --verify --deep --strict --verbose=2 "$app_dir"
+file "$app_dir/Contents/MacOS/MosaicLite"
 echo "$app_dir"
