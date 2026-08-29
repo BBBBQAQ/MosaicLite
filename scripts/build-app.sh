@@ -34,6 +34,9 @@ rm -rf "$app_dir"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 cp "$work_dir/release-build/apple/Products/Release/MosaicLite" "$app_dir/Contents/MacOS/MosaicLite"
 cp "$project_dir/Resources/Info.plist" "$app_dir/Contents/Info.plist"
+cp -R \
+  "$work_dir/release-build/apple/Products/Release/MosaicLite_MosaicLite.bundle" \
+  "$app_dir/Contents/Resources/"
 
 xcrun actool \
   --compile "$asset_build_dir" \
@@ -49,6 +52,7 @@ chmod +x "$app_dir/Contents/MacOS/MosaicLite"
 
 # Finder 与云盘扩展属性会在压缩时变成 ._* 文件，并使签名失效。
 xattr -cr "$app_dir"
+xattr -d com.apple.FinderInfo "$app_dir" 2>/dev/null || true
 
 codesign --force --sign - "$app_dir"
 codesign --verify --deep --strict --verbose=2 "$app_dir"
