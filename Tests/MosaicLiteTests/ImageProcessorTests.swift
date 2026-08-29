@@ -192,6 +192,38 @@ struct ImageProcessorTests {
         #expect(model.contextualImportBehavior == .add)
     }
 
+    @Test("粘贴图片会导入为工作图")
+    @MainActor
+    func pastingClipboardImageImportsIt() {
+        let source = makeImage(width: 72, height: 48, color: .systemTeal)
+        let model = EditorModel()
+
+        model.importPastedImage(source)
+
+        #expect(model.images.count == 1)
+        #expect(model.images.first?.name == "剪贴板图片")
+        #expect(model.selectedImage?.pixelSize == CGSize(width: 72, height: 48))
+    }
+
+    @Test("拼接模式粘贴图片会追加")
+    @MainActor
+    func pastingClipboardImageAppendsInStitchMode() {
+        let pasted = makeImage(width: 40, height: 30, color: .systemYellow)
+        let model = EditorModel()
+        let existing = ImageItem(
+            image: makeImage(width: 60, height: 50, color: .systemBlue),
+            name: "原图"
+        )
+        model.images = [existing]
+        model.selectedID = existing.id
+        model.tool = .stitch
+
+        model.importPastedImage(pasted)
+
+        #expect(model.images.count == 2)
+        #expect(model.images.map(\.name) == ["原图", "剪贴板图片"])
+    }
+
     @Test("满图文字水印保持图片尺寸")
     func tiledTextWatermarkPreservesSize() throws {
         let source = makeImage(width: 180, height: 120, color: .systemIndigo)
