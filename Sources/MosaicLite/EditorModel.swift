@@ -20,6 +20,9 @@ final class EditorModel: ObservableObject {
 
     @Published var cropRect = CGRect(x: 0.1, y: 0.1, width: 0.8, height: 0.8)
     @Published var showsCropSelection = true
+    @Published var cropRatioPreset: CropRatioPreset = .free
+    @Published var customCropRatioWidth: Double = 3
+    @Published var customCropRatioHeight: Double = 2
 
     @Published var mosaicStyle: MosaicStyle = .pixel
     @Published var mosaicBrush: MosaicBrush = .rectangle
@@ -66,6 +69,22 @@ final class EditorModel: ObservableObject {
 
     var sourcePixelSize: CGSize {
         selectedImage?.pixelSize ?? .zero
+    }
+
+    var cropAspectRatio: CGFloat? {
+        cropRatioPreset.aspectRatio(
+            sourceSize: sourcePixelSize,
+            customWidth: customCropRatioWidth,
+            customHeight: customCropRatioHeight
+        )
+    }
+
+    var normalizedCropAspectRatio: CGFloat? {
+        guard let ratio = cropAspectRatio,
+              sourcePixelSize.width > 0,
+              sourcePixelSize.height > 0
+        else { return nil }
+        return ratio / (sourcePixelSize.width / sourcePixelSize.height)
     }
 
     var contextualImportBehavior: ImageImportBehavior {
@@ -369,8 +388,24 @@ final class EditorModel: ObservableObject {
     }
 
     func resetCrop() {
-        cropRect = CGRect(x: 0.1, y: 0.1, width: 0.8, height: 0.8)
+        updateCropRatio()
         showsCropSelection = true
+    }
+
+    func updateCropRatio() {
+        guard selectedImage != nil else { return }
+        if let normalizedRatio = normalizedCropAspectRatio {
+            cropRect = CropGeometry.maximumCenteredRect(normalizedAspectRatio: normalizedRatio)
+        } else {
+            cropRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        showsCropSelection = true
+    }
+
+    func updateCustomCropRatio(width: Double? = nil, height: Double? = nil) {
+        if let width { customCropRatioWidth = min(max(width, 1), 10_000) }
+        if let height { customCropRatioHeight = min(max(height, 1), 10_000) }
+        if cropRatioPreset == .custom { updateCropRatio() }
     }
 
     func previewMosaic() {

@@ -27,6 +27,54 @@ enum ResizeUnit: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 }
 
+enum CropRatioPreset: String, CaseIterable, Identifiable, Sendable {
+    case free = "自由"
+    case original = "原始"
+    case square = "1:1"
+    case fourThree = "4:3"
+    case threeFour = "3:4"
+    case sixteenNine = "16:9"
+    case nineSixteen = "9:16"
+    case custom = "自定义"
+
+    var id: String { rawValue }
+
+    func aspectRatio(sourceSize: CGSize, customWidth: Double, customHeight: Double) -> CGFloat? {
+        switch self {
+        case .free:
+            nil
+        case .original:
+            sourceSize.height > 0 ? sourceSize.width / sourceSize.height : nil
+        case .square:
+            1
+        case .fourThree:
+            4 / 3
+        case .threeFour:
+            3 / 4
+        case .sixteenNine:
+            16 / 9
+        case .nineSixteen:
+            9 / 16
+        case .custom:
+            customWidth > 0 && customHeight > 0 ? customWidth / customHeight : nil
+        }
+    }
+}
+
+enum CropGeometry {
+    static func maximumCenteredRect(normalizedAspectRatio ratio: CGFloat) -> CGRect {
+        guard ratio.isFinite, ratio > 0 else {
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        if ratio >= 1 {
+            let height = 1 / ratio
+            return CGRect(x: 0, y: (1 - height) / 2, width: 1, height: height)
+        }
+        let width = ratio
+        return CGRect(x: (1 - width) / 2, y: 0, width: width, height: 1)
+    }
+}
+
 enum MosaicStyle: String, CaseIterable, Identifiable, Sendable {
     case pixel = "经典像素"
     case crystal = "晶格"

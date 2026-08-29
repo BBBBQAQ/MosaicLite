@@ -113,7 +113,52 @@ private struct CropControls: View {
 
     var body: some View {
         Group {
-            PanelHeader(title: "自由裁切", subtitle: "在图片上点击或拖拽即可开始")
+            PanelHeader(title: "图片裁切", subtitle: "自由框选或锁定常用比例")
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("裁切比例")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Picker("裁切比例", selection: $model.cropRatioPreset) {
+                    ForEach(CropRatioPreset.allCases) { preset in
+                        Text(preset.rawValue).tag(preset)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onChange(of: model.cropRatioPreset) { _, _ in
+                    model.updateCropRatio()
+                }
+
+                if model.cropRatioPreset == .custom {
+                    HStack(spacing: 8) {
+                        TextField(
+                            "宽",
+                            value: Binding(
+                                get: { model.customCropRatioWidth },
+                                set: { model.updateCustomCropRatio(width: $0) }
+                            ),
+                            format: .number.precision(.fractionLength(0))
+                        )
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.center)
+                        Text(":")
+                            .foregroundStyle(.secondary)
+                        TextField(
+                            "高",
+                            value: Binding(
+                                get: { model.customCropRatioHeight },
+                                set: { model.updateCustomCropRatio(height: $0) }
+                            ),
+                            format: .number.precision(.fractionLength(0))
+                        )
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.center)
+                    }
+                }
+            }
 
             InfoCard(
                 icon: "crop",
@@ -130,6 +175,9 @@ private struct CropControls: View {
                 Label("在图片上拖拽可直接框选", systemImage: "rectangle.dashed")
                 Label("拖动选区内部可移动裁切区域", systemImage: "hand.draw")
                 Label("拖动四条边或四角调整范围", systemImage: "arrow.up.left.and.arrow.down.right")
+                if model.cropRatioPreset != .free {
+                    Label("调整裁切框时会保持所选比例", systemImage: "aspectratio")
+                }
             }
             .font(.subheadline)
 

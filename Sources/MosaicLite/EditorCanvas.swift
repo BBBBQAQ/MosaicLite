@@ -109,7 +109,8 @@ struct EditorCanvas: View {
             if model.tool == .crop {
                 CropOverlay(
                     selection: $model.cropRect,
-                    isActive: $model.showsCropSelection
+                    isActive: $model.showsCropSelection,
+                    aspectRatio: model.normalizedCropAspectRatio
                 )
             }
         }
@@ -202,6 +203,7 @@ private struct ScrollWheelMonitor: NSViewRepresentable {
 private struct CropOverlay: View {
     @Binding var selection: CGRect
     @Binding var isActive: Bool
+    let aspectRatio: CGFloat?
     @State private var moveStart: CGRect?
     @State private var selectionStart: CGPoint?
     private let minimumSize: CGFloat = 0.045
@@ -280,20 +282,12 @@ private struct CropOverlay: View {
                     isActive = true
                 }
                 guard let start = selectionStart else { return }
-                let width = min(1, max(minimumSize, abs(current.x - start.x)))
-                let height = min(1, max(minimumSize, abs(current.y - start.y)))
-                let minX = min(min(start.x, current.x), 1 - width)
-                let minY = min(min(start.y, current.y), 1 - height)
-                selection = CGRect(
-                    x: minX,
-                    y: minY,
-                    width: width,
-                    height: height
-                )
+                selection = selectionRect(from: start, to: current)
             }
             .onEnded { value in
                 if abs(value.translation.width) < 4, abs(value.translation.height) < 4 {
-                    selection = CGRect(x: 0, y: 0, width: 1, height: 1)
+                    selection = aspectRatio.map(CropGeometry.maximumCenteredRect)
+                        ?? CGRect(x: 0, y: 0, width: 1, height: 1)
                     isActive = true
                 }
                 selectionStart = nil
@@ -336,6 +330,11 @@ private struct CropOverlay: View {
                     x: min(max(0, value.location.x / max(1, canvasSize.width)), 1),
                     y: min(max(0, value.location.y / max(1, canvasSize.height)), 1)
                 )
+                if let aspectRatio {
+                    selection = ratioLockedResize(handle: handle, point: point, ratio: aspectRatio)
+                    return
+                }
+
                 var minX = selection.minX
                 var maxX = selection.maxX
                 var minY = selection.minY
@@ -365,6 +364,82 @@ private struct CropOverlay: View {
                 }
                 selection = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             }
+    }
+
+    private func selectionRect(from start: CGPoint, to current: CGPoint) -> CGRect {
+        guard let aspectRatio else {
+            let width = min(1, max(minimumSize, abs(current.x - start.x)))
+            let height = min(1, max(minimumSize, abs(current.y - start.y)))
+            return CGRect(
+                x: min(min(start.x, current.x), 1 - width),
+                y: min(min(start.y, current.y), 1 - height),
+                width: width,
+                height: height
+            )
+        }
+
+        let xDirection: CGFloat = current.x >= start.x ? 1 : -1
+        let yDirection: CGFloat = current.y >= start.y ? 1 : -1
+        let availableWidth = xDirection > 0 ? 1 - start.x : start.x
+        let availableHeight = yDirection > 0 ? 1 - start.y : start.y
+        var width = max(abs(current.x - start.x), abs(current.y - start.y) * aspectRatio)
+        width = min(width, availableWidth, availableHeight * aspectRatio)
+        let minimumWidth = min(availableWidth, availableHeight * aspectRatio, max(minimumSize, minimumSize * aspectRatio))
+        width = max(width, minimumWidth)
+        let height = width / aspectRatio
+        return CGRect(
+            x: xDirection > 0 ? start.x : start.x - width,
+            y: yDirection > 0 ? start.y : start.y - height,
+            width: width,
+            height: height
+        )
+    }
+
+    private func ratioLockedResize(handle: CropHandle, point: CGPoint, ratio: CGFloat) -> CGRect {
+        switch handle {
+        case .topLeft, .topRight, .bottomLeft, .bottomRight:
+            let anchor: CGPoint
+            switch handle {
+            case .topLeft: anchor = CGPoint(x: selection.maxX, y: selection.maxY)
+            case .topRight: anchor = CGPoint(x: selection.minX, y: selection.maxY)
+            case .bottomLeft: anchor = CGPoint(x: selection.maxX, y: selection.minY)
+            case .bottomRight: anchor = CGPoint(x: selection.minX, y: selection.minY)
+            default: anchor = .zero
+            }
+            return selectionRect(from: anchor, to: point)
+
+        case .left, .right:
+            let fixedX = handle == .left ? selection.maxX : selection.minX
+            let direction: CGFloat = handle == .left ? -1 : 1
+            let centerY = selection.midY
+            let availableWidth = direction > 0 ? 1 - fixedX : fixedX
+            let verticalRoom = 2 * min(centerY, 1 - centerY)
+            var width = min(abs(point.x - fixedX), availableWidth, verticalRoom * ratio)
+            width = max(width, min(availableWidth, verticalRoom * ratio, max(minimumSize, minimumSize * ratio)))
+            let height = width / ratio
+            return CGRect(
+                x: direction > 0 ? fixedX : fixedX - width,
+                y: centerY - height / 2,
+                width: width,
+                height: height
+            )
+
+        case .top, .bottom:
+            let fixedY = handle == .top ? selection.maxY : selection.minY
+            let direction: CGFloat = handle == .top ? -1 : 1
+            let centerX = selection.midX
+            let availableHeight = direction > 0 ? 1 - fixedY : fixedY
+            let horizontalRoom = 2 * min(centerX, 1 - centerX)
+            var height = min(abs(point.y - fixedY), availableHeight, horizontalRoom / ratio)
+            height = max(height, min(availableHeight, horizontalRoom / ratio, max(minimumSize, minimumSize / ratio)))
+            let width = height * ratio
+            return CGRect(
+                x: centerX - width / 2,
+                y: direction > 0 ? fixedY : fixedY - height,
+                width: width,
+                height: height
+            )
+        }
     }
 }
 
