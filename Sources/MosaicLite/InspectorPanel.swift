@@ -40,14 +40,14 @@ private struct ResizeControls: View {
         Group {
             PanelHeader(title: "调整尺寸", subtitle: "高质量等比例缩放")
 
-            Toggle("批量处理", isOn: $model.resizeBatchMode)
+            Toggle("批量处理".localized, isOn: $model.resizeBatchMode)
 
             if model.resizeBatchMode {
                 BatchImageList(title: "待处理图片")
             }
 
-            Picker("单位", selection: $model.resizeUnit) {
-                ForEach(ResizeUnit.allCases) { Text($0.rawValue).tag($0) }
+            Picker("单位".localized, selection: $model.resizeUnit) {
+                ForEach(ResizeUnit.allCases) { Text($0.localizedName).tag($0) }
             }
             .pickerStyle(.segmented)
             .onChange(of: model.resizeUnit) { _, _ in model.previewResize() }
@@ -73,7 +73,7 @@ private struct ResizeControls: View {
                 }
 
                 Toggle(isOn: $model.lockAspect) {
-                    Label("锁定宽高比", systemImage: model.lockAspect ? "link" : "link.badge.plus")
+                    Label("锁定宽高比".localized, systemImage: model.lockAspect ? "link" : "link.badge.plus")
                 }
             } else {
                 NumberField(
@@ -87,7 +87,7 @@ private struct ResizeControls: View {
                     ),
                     suffix: "%"
                 )
-                Text("输入 1–1000 之间的百分比")
+                Text("输入 1–1000 之间的百分比".localized)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -116,13 +116,13 @@ private struct CropControls: View {
             PanelHeader(title: "图片裁切", subtitle: "自由框选或锁定常用比例")
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("裁切比例")
+                Text("裁切比例".localized)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                Picker("裁切比例", selection: $model.cropRatioPreset) {
+                Picker("裁切比例".localized, selection: $model.cropRatioPreset) {
                     ForEach(CropRatioPreset.allCases) { preset in
-                        Text(preset.rawValue).tag(preset)
+                        Text(preset.localizedName).tag(preset)
                     }
                 }
                 .labelsHidden()
@@ -135,7 +135,7 @@ private struct CropControls: View {
                 if model.cropRatioPreset == .custom {
                     HStack(spacing: 8) {
                         TextField(
-                            "宽",
+                            "宽".localized,
                             value: Binding(
                                 get: { model.customCropRatioWidth },
                                 set: { model.updateCustomCropRatio(width: $0) }
@@ -147,7 +147,7 @@ private struct CropControls: View {
                         Text(":")
                             .foregroundStyle(.secondary)
                         TextField(
-                            "高",
+                            "高".localized,
                             value: Binding(
                                 get: { model.customCropRatioHeight },
                                 set: { model.updateCustomCropRatio(height: $0) }
@@ -164,19 +164,19 @@ private struct CropControls: View {
                 icon: "crop",
                 text: model.showsCropSelection
                     ? "\(cropWidth) × \(cropHeight) px"
-                    : "点击图片创建裁切区域"
+                    : "点击图片创建裁切区域".localized
             )
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("操作提示")
+                Text("操作提示".localized)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Label("点击图片默认框选整张图片", systemImage: "cursorarrow.click")
-                Label("在图片上拖拽可直接框选", systemImage: "rectangle.dashed")
-                Label("拖动选区内部可移动裁切区域", systemImage: "hand.draw")
-                Label("拖动四条边或四角调整范围", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label("点击图片默认框选整张图片".localized, systemImage: "cursorarrow.click")
+                Label("在图片上拖拽可直接框选".localized, systemImage: "rectangle.dashed")
+                Label("拖动选区内部可移动裁切区域".localized, systemImage: "hand.draw")
+                Label("拖动四条边或四角调整范围".localized, systemImage: "arrow.up.left.and.arrow.down.right")
                 if model.cropRatioPreset != .free {
-                    Label("调整裁切框时会保持所选比例", systemImage: "aspectratio")
+                    Label("调整裁切框时会保持所选比例".localized, systemImage: "aspectratio")
                 }
             }
             .font(.subheadline)
@@ -204,15 +204,15 @@ private struct MosaicControls: View {
         Group {
             PanelHeader(title: "隐私打码", subtitle: "框选区域或直接涂抹")
 
-            Picker("方式", selection: $model.mosaicBrush) {
+            Picker("方式".localized, selection: $model.mosaicBrush) {
                 ForEach(MosaicBrush.allCases) {
-                    Label($0.rawValue, systemImage: $0.icon).tag($0)
+                    Label($0.localizedName, systemImage: $0.icon).tag($0)
                 }
             }
             .pickerStyle(.segmented)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("马赛克风格").font(.subheadline).foregroundStyle(.secondary)
+                Text("马赛克风格".localized).font(.subheadline).foregroundStyle(.secondary)
                 ForEach(MosaicStyle.allCases) { style in
                     Button {
                         model.mosaicStyle = style
@@ -220,7 +220,7 @@ private struct MosaicControls: View {
                     } label: {
                         HStack {
                             MosaicSwatch(style: style)
-                            Text(style.rawValue)
+                            Text(style.localizedName)
                             Spacer()
                             if model.mosaicStyle == style {
                                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
@@ -244,13 +244,13 @@ private struct MosaicControls: View {
             }
 
             HStack {
-                Button("清除选区") {
+                Button("清除选区".localized) {
                     model.strokes.removeAll()
                     model.previewMosaic()
                 }
                 .disabled(model.strokes.isEmpty)
                 Spacer()
-                Text("\(model.strokes.count) 个区域")
+                Text(L10n.format("%d 个区域", model.strokes.count))
                     .foregroundStyle(.secondary)
             }
 
@@ -269,22 +269,22 @@ private struct WatermarkControls: View {
         Group {
             PanelHeader(title: "添加水印", subtitle: "文字满图或自定义 Logo")
 
-            Toggle("批量处理", isOn: $model.watermarkBatchMode)
+            Toggle("批量处理".localized, isOn: $model.watermarkBatchMode)
 
             if model.watermarkBatchMode {
                 BatchImageList(title: "待处理图片")
             }
 
-            Picker("类型", selection: $model.watermarkKind) {
-                ForEach(WatermarkKind.allCases) { Text($0.rawValue).tag($0) }
+            Picker("类型".localized, selection: $model.watermarkKind) {
+                ForEach(WatermarkKind.allCases) { Text($0.localizedName).tag($0) }
             }
             .pickerStyle(.segmented)
             .onChange(of: model.watermarkKind) { _, _ in model.previewWatermark() }
 
             if model.watermarkKind == .text {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("水印文字").font(.subheadline).foregroundStyle(.secondary)
-                    TextField("输入水印文字", text: $model.watermarkText)
+                    Text("水印文字".localized).font(.subheadline).foregroundStyle(.secondary)
+                    TextField("输入水印文字".localized, text: $model.watermarkText)
                         .textFieldStyle(.roundedBorder)
                         .onChange(of: model.watermarkText) { _, _ in model.previewWatermark() }
                 }
@@ -316,12 +316,12 @@ private struct WatermarkControls: View {
                             Image(systemName: "xmark")
                         }
                         .buttonStyle(.bordered)
-                        .help("清除 Logo")
+                        .help("清除 Logo".localized)
                     }
                 }
 
-                Picker("位置", selection: $model.watermarkPosition) {
-                    ForEach(WatermarkPosition.allCases) { Text($0.rawValue).tag($0) }
+                Picker("位置".localized, selection: $model.watermarkPosition) {
+                    ForEach(WatermarkPosition.allCases) { Text($0.localizedName).tag($0) }
                 }
                 .onChange(of: model.watermarkPosition) { _, _ in model.previewWatermark() }
 
@@ -353,8 +353,8 @@ private struct WatermarkControls: View {
             InfoCard(
                 icon: "square.and.arrow.up",
                 text: model.watermarkBatchMode && model.images.count > 1
-                    ? "右上角导出将保存全部 \(model.images.count) 张图片"
-                    : "应用后可从右上角导出"
+                    ? L10n.format("右上角导出将保存全部 %d 张图片", model.images.count)
+                    : "应用后可从右上角导出".localized
             )
 
             PrimaryAction(
@@ -378,14 +378,14 @@ private struct BatchImageList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(title).font(.subheadline).foregroundStyle(.secondary)
+                Text(title.localized).font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
-                Text("\(model.images.count) 张").foregroundStyle(.tertiary)
+                Text(L10n.format("%d 张", model.images.count)).foregroundStyle(.tertiary)
                 Button { model.requestImport(.add) } label: {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.borderless)
-                .help("添加图片")
+                .help("添加图片".localized)
             }
 
             ForEach(model.images) { item in
@@ -429,8 +429,8 @@ private struct StitchControls: View {
         Group {
             PanelHeader(title: "图片拼接", subtitle: "拖动列表调整顺序，再合并为一张工作图")
 
-            Picker("方向", selection: $model.stitchDirection) {
-                ForEach(StitchDirection.allCases) { Text($0.rawValue).tag($0) }
+            Picker("方向".localized, selection: $model.stitchDirection) {
+                ForEach(StitchDirection.allCases) { Text($0.localizedName).tag($0) }
             }
             .pickerStyle(.segmented)
             .onChange(of: model.stitchDirection) { _, _ in model.previewStitch() }
@@ -438,13 +438,13 @@ private struct StitchControls: View {
             LabeledSlider(title: "图片间距", value: $model.stitchSpacing, range: 0...80, suffix: " px")
                 .onChange(of: model.stitchSpacing) { _, _ in model.previewStitch() }
 
-            ColorPicker("背景颜色", selection: $model.stitchBackground, supportsOpacity: true)
+            ColorPicker("背景颜色".localized, selection: $model.stitchBackground, supportsOpacity: true)
                 .onChange(of: model.stitchBackground) { _, _ in model.previewStitch() }
 
             Divider()
 
             HStack {
-                Text("图片列表").font(.subheadline).foregroundStyle(.secondary)
+                Text("图片列表".localized).font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
                 Button {
                     model.requestImport(.add)
@@ -458,7 +458,7 @@ private struct StitchControls: View {
                 HStack(spacing: 10) {
                     Image(systemName: "line.3.horizontal")
                         .foregroundStyle(.tertiary)
-                        .help("拖动调整顺序")
+                        .help("拖动调整顺序".localized)
                     Image(nsImage: item.image)
                         .resizable()
                         .scaledToFill()
@@ -504,8 +504,8 @@ private struct PanelHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.title3.bold())
-            Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+            Text(title.localized).font(.title3.bold())
+            Text(subtitle.localized).font(.subheadline).foregroundStyle(.secondary)
         }
     }
 }
@@ -517,7 +517,7 @@ private struct NumberField: View {
 
     var body: some View {
         HStack {
-            Text(title).foregroundStyle(.secondary)
+            Text(title.localized).foregroundStyle(.secondary)
             Spacer()
             TextField("", value: $value, format: .number.precision(.fractionLength(0)))
                 .multilineTextAlignment(.trailing)
@@ -540,7 +540,7 @@ private struct LabeledSlider: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack {
-                Text(title)
+                Text(title.localized)
                 Spacer()
                 Text("\(Int(value))\(suffix)").foregroundStyle(.secondary).monospacedDigit()
             }
@@ -553,7 +553,7 @@ private struct InfoCard: View {
     let icon: String
     let text: String
     var body: some View {
-        Label(text, systemImage: icon)
+        Label(text.localized, systemImage: icon)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -568,7 +568,7 @@ private struct PrimaryAction: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: icon).frame(maxWidth: .infinity)
+            Label(title.localized, systemImage: icon).frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)

@@ -40,15 +40,15 @@ struct ContentView: View {
             model.refreshOutput()
         }
         .alert(
-            "导出失败",
+            "导出失败".localized,
             isPresented: Binding(
                 get: { model.exportErrorMessage != nil },
                 set: { if !$0 { model.exportErrorMessage = nil } }
             )
         ) {
-            Button("好") { model.exportErrorMessage = nil }
+            Button("好".localized) { model.exportErrorMessage = nil }
         } message: {
-            Text(model.exportErrorMessage ?? "请稍后重试。")
+            Text(model.exportErrorMessage ?? "请稍后重试。".localized)
         }
     }
 }
@@ -69,7 +69,7 @@ private struct ToolSidebar: View {
                     VStack(spacing: 6) {
                         Image(systemName: tool.icon)
                             .font(.system(size: 19, weight: .medium))
-                        Text(tool.rawValue)
+                        Text(tool.localizedName)
                             .font(.caption)
                     }
                     .frame(width: 64, height: 58)
@@ -83,8 +83,8 @@ private struct ToolSidebar: View {
                 )
                 .help(
                     model.tool == .stitch && model.images.count > 1 && tool != .stitch
-                    ? "请先应用拼接，再继续其他处理"
-                    : tool.rawValue
+                    ? "请先应用拼接，再继续其他处理".localized
+                    : tool.localizedName
                 )
             }
 
@@ -103,7 +103,7 @@ private struct ToolSidebar: View {
             }
             .buttonStyle(.bordered)
             .clipShape(Circle())
-            .help(model.contextualImportBehavior == .add ? "添加图片" : "更换图片")
+            .help((model.contextualImportBehavior == .add ? "添加图片" : "更换图片").localized)
             .padding(.bottom, 14)
         }
         .padding(.top, 8)
@@ -180,13 +180,13 @@ private struct TopBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(model.tool.rawValue)
+            Text(model.tool.localizedName)
                 .font(.headline)
                 .contentTransition(.interpolate)
                 .animation(.easeOut(duration: 0.16), value: model.tool)
 
             if !model.images.isEmpty {
-                Text(showsImageCount ? "\(model.images.count) 张图片" : selectedName)
+                Text(showsImageCount ? L10n.format("%d 张图片", model.images.count) : selectedName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -198,13 +198,13 @@ private struct TopBar: View {
                 Image(systemName: "arrow.uturn.backward")
             }
             .disabled(!model.canUndo)
-            .help("撤销")
+            .help("撤销".localized)
 
             Button { model.redo() } label: {
                 Image(systemName: "arrow.uturn.forward")
             }
             .disabled(!model.canRedo)
-            .help("重做")
+            .help("重做".localized)
 
             Divider().frame(height: 20)
 
@@ -212,19 +212,19 @@ private struct TopBar: View {
                 model.requestImport()
             } label: {
                 Label(
-                    model.contextualImportBehavior == .add ? "添加图片" : "更换图片",
+                    (model.contextualImportBehavior == .add ? "添加图片" : "更换图片").localized,
                     systemImage: model.contextualImportBehavior == .add ? "photo.badge.plus" : "arrow.triangle.2.circlepath"
                 )
             }
-            .help(model.contextualImportBehavior == .add ? "继续添加图片" : "使用另一张图片替换当前工作图")
+            .help((model.contextualImportBehavior == .add ? "继续添加图片" : "使用另一张图片替换当前工作图").localized)
 
             Button { model.showInspector.toggle() } label: {
                 Image(systemName: "sidebar.right")
             }
-            .help("显示或隐藏参数面板")
+            .help("显示或隐藏参数面板".localized)
 
             Button { model.exportImage() } label: {
-                Label("导出", systemImage: "square.and.arrow.up")
+                Label("导出".localized, systemImage: "square.and.arrow.up")
             }
             .buttonStyle(.borderedProminent)
             .disabled(model.outputImage == nil)

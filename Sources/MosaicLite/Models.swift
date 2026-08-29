@@ -9,6 +9,7 @@ enum EditorTool: String, CaseIterable, Identifiable {
     case stitch = "拼接"
 
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 
     var icon: String {
         switch self {
@@ -25,6 +26,7 @@ enum ResizeUnit: String, CaseIterable, Identifiable, Sendable {
     case pixels = "像素"
     case percent = "百分比"
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 }
 
 enum CropRatioPreset: String, CaseIterable, Identifiable, Sendable {
@@ -38,6 +40,7 @@ enum CropRatioPreset: String, CaseIterable, Identifiable, Sendable {
     case custom = "自定义"
 
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 
     func aspectRatio(sourceSize: CGSize, customWidth: Double, customHeight: Double) -> CGFloat? {
         switch self {
@@ -80,12 +83,14 @@ enum MosaicStyle: String, CaseIterable, Identifiable, Sendable {
     case crystal = "晶格"
     case blur = "柔和模糊"
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 }
 
 enum MosaicBrush: String, CaseIterable, Identifiable, Sendable {
     case rectangle = "框选"
     case freehand = "手涂"
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 
     var icon: String {
         self == .rectangle ? "rectangle.dashed" : "scribble"
@@ -96,6 +101,7 @@ enum StitchDirection: String, CaseIterable, Identifiable, Sendable {
     case horizontal = "横向"
     case vertical = "纵向"
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 }
 
 enum ImageImportBehavior: Equatable {
@@ -107,6 +113,7 @@ enum WatermarkKind: String, CaseIterable, Identifiable, Sendable {
     case text = "满图文字"
     case logo = "自定义 Logo"
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 }
 
 enum WatermarkPosition: String, CaseIterable, Identifiable, Sendable {
@@ -117,6 +124,7 @@ enum WatermarkPosition: String, CaseIterable, Identifiable, Sendable {
     case bottomCenter = "下居中"
     case bottomRight = "右下"
     var id: String { rawValue }
+    var localizedName: String { rawValue.localized }
 }
 
 struct ImageItem: Identifiable {

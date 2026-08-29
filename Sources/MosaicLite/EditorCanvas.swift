@@ -53,7 +53,7 @@ struct EditorCanvas: View {
                         Slider(value: $zoom, in: 0.08...6)
                             .labelsHidden()
                             .frame(width: 124)
-                            .help("拖动滑块或使用滚轮缩放")
+                            .help("拖动滑块或使用滚轮缩放".localized)
                         Image(systemName: "plus.magnifyingglass")
                         Text("\(Int(zoom * 100))%")
                             .monospacedDigit()
@@ -64,7 +64,7 @@ struct EditorCanvas: View {
                             Image(systemName: "arrow.counterclockwise")
                         }
                         .buttonStyle(.plain)
-                        .help("恢复画布缩放")
+                        .help("恢复画布缩放".localized)
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -585,12 +585,12 @@ private struct EmptyCanvas: View {
                         .font(.system(size: 30, weight: .light))
                         .foregroundStyle(.tint)
                 }
-                Text("拖入图片或按 ⌘V 开始编辑")
+                Text("拖入图片或按 ⌘V 开始编辑".localized)
                     .font(.title3.weight(.medium))
-                Text("支持 PNG、JPEG、HEIC、TIFF")
+                Text("支持 PNG、JPEG、HEIC、TIFF".localized)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Text("选择图片")
+                Text("选择图片".localized)
                     .padding(.horizontal, 15)
                     .padding(.vertical, 7)
                     .background(Color.accentColor, in: Capsule())

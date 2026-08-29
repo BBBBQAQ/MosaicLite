@@ -42,7 +42,7 @@ final class EditorModel: ObservableObject {
     @Published var watermarkSpacing: Double = 90
     @Published var watermarkAngle: Double = -28
     @Published var watermarkLogo: NSImage?
-    @Published var watermarkLogoName = "尚未选择 Logo"
+    @Published var watermarkLogoName = "尚未选择 Logo".localized
     @Published var watermarkLogoScale: Double = 0.18
     @Published var watermarkPosition: WatermarkPosition = .bottomRight
     @Published var watermarkPadding: Double = 28
@@ -144,7 +144,7 @@ final class EditorModel: ObservableObject {
     }
 
     func importPastedImage(_ image: NSImage, behavior: ImageImportBehavior? = nil) {
-        importItems([ImageItem(image: image, name: "剪贴板图片")], behavior: behavior)
+        importItems([ImageItem(image: image, name: "剪贴板图片".localized)], behavior: behavior)
     }
 
     private func importItems(_ additions: [ImageItem], behavior: ImageImportBehavior?) {
@@ -406,7 +406,7 @@ final class EditorModel: ObservableObject {
 
     func clearWatermarkLogo() {
         watermarkLogo = nil
-        watermarkLogoName = "尚未选择 Logo"
+        watermarkLogoName = "尚未选择 Logo".localized
         previewWatermark()
     }
 
@@ -527,7 +527,7 @@ final class EditorModel: ObservableObject {
               )
         else { return }
         recordCurrentState()
-        let item = ImageItem(image: composite, name: "拼接图")
+        let item = ImageItem(image: composite, name: "拼接图".localized)
         images = [item]
         selectedID = item.id
         outputImage = composite
@@ -606,7 +606,7 @@ final class EditorModel: ObservableObject {
         guard let outputImage, let cgImage = outputImage.cgImageValue else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png, .jpeg]
-        panel.nameFieldStringValue = "MosaicLite-导出.png"
+        panel.nameFieldStringValue = "MosaicLite-导出.png".localized
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
@@ -617,13 +617,13 @@ final class EditorModel: ObservableObject {
             properties: isJPEG ? [.compressionFactor: 0.92] : [:]
         )
         guard let data else {
-            exportErrorMessage = "无法生成图片数据，请尝试更换导出格式。"
+            exportErrorMessage = "无法生成图片数据，请尝试更换导出格式。".localized
             return
         }
         do {
             try data.write(to: url, options: .atomic)
         } catch {
-            exportErrorMessage = "无法保存图片：\(error.localizedDescription)"
+            exportErrorMessage = L10n.format("无法保存图片：%@", error.localizedDescription)
         }
     }
 
@@ -632,7 +632,7 @@ final class EditorModel: ObservableObject {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
-        panel.prompt = "选择导出文件夹"
+        panel.prompt = "选择导出文件夹".localized
         guard panel.runModal() == .OK, let directory = panel.url else { return }
 
         var failedNames: [String] = []
@@ -642,7 +642,8 @@ final class EditorModel: ObservableObject {
                 continue
             }
             let safeName = item.name.replacingOccurrences(of: "/", with: "-")
-            let url = directory.appendingPathComponent("\(safeName)-处理后-\(index + 1).png")
+            let filename = L10n.format("%@-处理后-%d.png", safeName, index + 1)
+            let url = directory.appendingPathComponent(filename)
             let representation = NSBitmapImageRep(cgImage: cgImage)
             guard let data = representation.representation(using: .png, properties: [:]) else {
                 failedNames.append(item.name)
@@ -655,7 +656,11 @@ final class EditorModel: ObservableObject {
             }
         }
         if !failedNames.isEmpty {
-            exportErrorMessage = "以下图片导出失败：\(failedNames.joined(separator: "、"))"
+            let separator = L10n.usesChinese ? "、" : ", "
+            exportErrorMessage = L10n.format(
+                "以下图片导出失败：%@",
+                failedNames.joined(separator: separator)
+            )
         }
     }
 

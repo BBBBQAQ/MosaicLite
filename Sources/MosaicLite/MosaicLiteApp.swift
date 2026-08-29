@@ -15,23 +15,23 @@ struct MosaicLiteApp: App {
         .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .undoRedo) {
-                Button("撤销") { model.undo() }
+                Button("撤销".localized) { model.undo() }
                     .keyboardShortcut("z")
                     .disabled(!model.canUndo)
-                Button("重做") { model.redo() }
+                Button("重做".localized) { model.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                     .disabled(!model.canRedo)
             }
             CommandGroup(replacing: .pasteboard) {
-                Button("剪切") {
+                Button("剪切".localized) {
                     NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("x")
-                Button("拷贝") {
+                Button("拷贝".localized) {
                     NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("c")
-                Button("粘贴") {
+                Button("粘贴".localized) {
                     if !model.pasteImages() {
                         NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil)
                     }
@@ -39,11 +39,11 @@ struct MosaicLiteApp: App {
                 .keyboardShortcut("v")
             }
             CommandGroup(after: .newItem) {
-                Button(model.contextualImportBehavior == .add ? "添加图片…" : "更换图片…") {
+                Button((model.contextualImportBehavior == .add ? "添加图片…" : "更换图片…").localized) {
                     model.requestImport()
                 }
                     .keyboardShortcut("o")
-                Button("导出图片…") { model.exportImage() }
+                Button("导出图片…".localized) { model.exportImage() }
                     .keyboardShortcut("s")
                     .disabled(model.outputImage == nil)
             }
