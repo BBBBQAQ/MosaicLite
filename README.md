@@ -41,6 +41,7 @@ MosaicLite 使用 SwiftUI、AppKit、Core Graphics 与 Core Image 构建。图�
 - 横向或纵向拼接，支持间距、背景色和拖拽排序
 - 满图文字水印与自定义 PNG Logo 水印
 - 画布滚轮缩放和固定缩放滑块
+- 支持通过 ⌘V 粘贴剪贴板图片或复制的图片文件
 - 撤销、重做、实时预览及 PNG/JPEG 导出
 - 浅色与深色模式
 
