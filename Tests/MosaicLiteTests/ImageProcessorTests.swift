@@ -4,6 +4,17 @@ import Testing
 
 @Suite("图片处理核心能力", .serialized)
 struct ImageProcessorTests {
+    @Test("系统语言为中文时使用中文，其他语言使用英文")
+    func appLanguageFollowsPrimarySystemLanguage() {
+        #expect(L10n.usesChineseLanguage(["zh-Hans-CN"]))
+        #expect(L10n.usesChineseLanguage(["zh-Hant-HK"]))
+        #expect(!L10n.usesChineseLanguage(["en-US", "zh-Hans-CN"]))
+        #expect(!L10n.usesChineseLanguage(["ja-JP"]))
+        #expect(!L10n.usesChineseLanguage([]))
+        #expect(L10n.tr("尺寸", usesChinese: true) == "尺寸")
+        #expect(L10n.tr("尺寸", usesChinese: false) == "Resize")
+    }
+
     @Test("按像素调整尺寸")
     func resizeByPixels() throws {
         let source = makeImage(width: 80, height: 40, color: .systemBlue)
@@ -93,7 +104,7 @@ struct ImageProcessorTests {
 
         #expect(model.images.count == 1)
         #expect(model.selectedImage?.pixelSize == CGSize(width: 75, height: 20))
-        #expect(model.images.first?.name == "拼接图")
+        #expect(model.images.first?.name == "拼接图".localized)
     }
 
     @Test("拖拽拼接图片会更新排列顺序")
@@ -201,7 +212,7 @@ struct ImageProcessorTests {
         model.importPastedImage(source)
 
         #expect(model.images.count == 1)
-        #expect(model.images.first?.name == "剪贴板图片")
+        #expect(model.images.first?.name == "剪贴板图片".localized)
         #expect(model.selectedImage?.pixelSize == CGSize(width: 72, height: 48))
     }
 
@@ -221,7 +232,7 @@ struct ImageProcessorTests {
         model.importPastedImage(pasted)
 
         #expect(model.images.count == 2)
-        #expect(model.images.map(\.name) == ["原图", "剪贴板图片"])
+        #expect(model.images.map(\.name) == ["原图", "剪贴板图片".localized])
     }
 
     @Test("满图文字水印保持图片尺寸")
@@ -267,7 +278,7 @@ struct ImageProcessorTests {
         model.clearWatermarkLogo()
 
         #expect(model.watermarkLogo == nil)
-        #expect(model.watermarkLogoName == "尚未选择 Logo")
+        #expect(model.watermarkLogoName == "尚未选择 Logo".localized)
     }
 
     @Test("下居中 Logo 水印保持图片尺寸")
