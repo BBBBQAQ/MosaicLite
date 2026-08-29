@@ -106,6 +106,48 @@ final class EditorModel: ObservableObject {
             guard let image = NSImage(contentsOf: url) else { return nil }
             return ImageItem(image: image, name: url.deletingPathExtension().lastPathComponent)
         }
+        importItems(additions, behavior: behavior)
+    }
+
+    @discardableResult
+    func pasteImages(
+        from pasteboard: NSPasteboard = .general,
+        behavior: ImageImportBehavior? = nil
+    ) -> Bool {
+        let fileURLObjects = pasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) ?? []
+        let imageURLs = fileURLObjects.compactMap { object -> URL? in
+            guard let url = object as? NSURL else { return nil }
+            let fileURL = url as URL
+            guard UTType(filenameExtension: fileURL.pathExtension)?.conforms(to: .image) == true else {
+                return nil
+            }
+            return fileURL
+        }
+        let fileItems = imageURLs.compactMap { url -> ImageItem? in
+            guard let image = NSImage(contentsOf: url) else { return nil }
+            return ImageItem(image: image, name: url.deletingPathExtension().lastPathComponent)
+        }
+        if !fileItems.isEmpty {
+            importItems(fileItems, behavior: behavior)
+            return true
+        }
+
+        let image = pasteboard.data(forType: .png).flatMap(NSImage.init(data:))
+            ?? pasteboard.data(forType: .tiff).flatMap(NSImage.init(data:))
+            ?? NSImage(pasteboard: pasteboard)
+        guard let image else { return false }
+        importPastedImage(image, behavior: behavior)
+        return true
+    }
+
+    func importPastedImage(_ image: NSImage, behavior: ImageImportBehavior? = nil) {
+        importItems([ImageItem(image: image, name: "剪贴板图片")], behavior: behavior)
+    }
+
+    private func importItems(_ additions: [ImageItem], behavior: ImageImportBehavior?) {
         guard !additions.isEmpty else { return }
         let resolvedBehavior = behavior ?? contextualImportBehavior
         switch resolvedBehavior {

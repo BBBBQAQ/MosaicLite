@@ -585,7 +585,7 @@ private struct EmptyCanvas: View {
                         .font(.system(size: 30, weight: .light))
                         .foregroundStyle(.tint)
                 }
-                Text("拖入图片开始编辑")
+                Text("拖入图片或按 ⌘V 开始编辑")
                     .font(.title3.weight(.medium))
                 Text("支持 PNG、JPEG、HEIC、TIFF")
                     .font(.subheadline)
