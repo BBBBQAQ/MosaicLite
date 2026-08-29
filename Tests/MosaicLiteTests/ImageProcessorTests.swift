@@ -333,6 +333,41 @@ struct ImageProcessorTests {
         #expect(model.selectedImage?.pixelSize == CGSize(width: 160, height: 80))
     }
 
+    @Test("裁切比例生成最大居中选区")
+    @MainActor
+    func cropRatioCreatesCenteredSelection() {
+        let model = EditorModel()
+        let source = makeImage(width: 1600, height: 900, color: .systemOrange)
+        let item = ImageItem(image: source, name: "比例裁切测试")
+        model.images = [item]
+        model.selectedID = item.id
+
+        model.cropRatioPreset = .square
+        model.updateCropRatio()
+
+        #expect(model.showsCropSelection)
+        #expect(abs(model.cropRect.width - 0.5625) < 0.0001)
+        #expect(abs(model.cropRect.minX - 0.21875) < 0.0001)
+        #expect(model.cropRect.height == 1)
+    }
+
+    @Test("自定义裁切比例会更新选区")
+    @MainActor
+    func customCropRatioUpdatesSelection() {
+        let model = EditorModel()
+        let source = makeImage(width: 1200, height: 800, color: .systemOrange)
+        let item = ImageItem(image: source, name: "自定义比例测试")
+        model.images = [item]
+        model.selectedID = item.id
+        model.cropRatioPreset = .custom
+
+        model.updateCustomCropRatio(width: 2, height: 1)
+
+        let pixelWidth = model.cropRect.width * model.sourcePixelSize.width
+        let pixelHeight = model.cropRect.height * model.sourcePixelSize.height
+        #expect(abs(pixelWidth / pixelHeight - 2) < 0.0001)
+    }
+
     private func makeImage(width: Int, height: Int, color: NSColor) -> NSImage {
         let image = NSImage(size: NSSize(width: width, height: height))
         image.lockFocus()
