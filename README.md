@@ -5,10 +5,67 @@
 <h1 align="center">MosaicLite</h1>
 
 <p align="center">
-  一款轻量、原生、专注常用操作的 macOS 图片编辑工具。
+  一款轻量、原生、专注常用操作的 macOS 图片编辑工具。<br>
+  A lightweight, native macOS image editor focused on everyday tasks.
 </p>
 
+<p align="center">
+  <a href="#english">English</a> · <a href="#中文">中文</a>
+</p>
+
+<a id="english"></a>
+
+## English
+
+MosaicLite is built with SwiftUI, AppKit, Core Graphics, and Core Image. All image processing happens locally on your Mac—your images are never uploaded, and no network service is required.
+
+The interface automatically follows your primary system language. Chinese systems use Chinese; every other system language uses English.
+
+### Features
+
+- Proportional resizing by pixels or percentage
+- Batch resizing and watermarking
+- Freeform cropping with common and custom aspect ratios
+- Rectangle and freehand privacy redaction
+- Classic pixel, crystal, and soft Gaussian-style blur mosaics
+- Horizontal or vertical image stitching with spacing, background color, and drag-to-reorder
+- Tiled text watermarks and custom PNG logo watermarks
+- Paste images or copied image files with ⌘V
+- Scroll-wheel canvas zoom with a persistent zoom slider
+- Undo, redo, live preview, and PNG/JPEG export
+- Native light and dark mode support
+
+### Requirements
+
+- macOS 15 or later on Apple Silicon or Intel
+- Xcode 16 or later when building from source
+
+### Build from Source
+
+Open `Package.swift` in Xcode, select the `MosaicLite` scheme, and run it. You can also build the universal app from Terminal:
+
+```bash
+./scripts/build-app.sh
+open outputs/MosaicLite.app
+```
+
+Create verified release archives with:
+
+```bash
+./scripts/package-release.sh
+```
+
+Public distribution is currently ad-hoc signed. Developer ID signing and notarization are recommended for production distribution.
+
+---
+
+<a id="中文"></a>
+
+## 中文
+
 MosaicLite 使用 SwiftUI、AppKit、Core Graphics 与 Core Image 构建。图片处理全部在本机完成，不上传图片，也不依赖网络服务。
+
+界面会自动跟随系统首选语言：中文系统显示中文，其他语言显示英文。
 
 ## 界面预览
 
@@ -42,6 +99,7 @@ MosaicLite 使用 SwiftUI、AppKit、Core Graphics 与 Core Image 构建。图�
 - 满图文字水印与自定义 PNG Logo 水印
 - 画布滚轮缩放和固定缩放滑块
 - 支持通过 ⌘V 粘贴剪贴板图片或复制的图片文件
+- 根据系统语言自动切换中文或英文界面
 - 撤销、重做、实时预览及 PNG/JPEG 导出
 - 浅色与深色模式
 
