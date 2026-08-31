@@ -110,7 +110,8 @@ struct EditorCanvas: View {
                 CropOverlay(
                     selection: $model.cropRect,
                     isActive: $model.showsCropSelection,
-                    aspectRatio: model.normalizedCropAspectRatio
+                    aspectRatio: model.normalizedCropAspectRatio,
+                    onApply: model.applyCrop
                 )
             }
         }
@@ -204,6 +205,7 @@ private struct CropOverlay: View {
     @Binding var selection: CGRect
     @Binding var isActive: Bool
     let aspectRatio: CGFloat?
+    let onApply: () -> Void
     @State private var moveStart: CGRect?
     @State private var selectionStart: CGPoint?
     private let minimumSize: CGFloat = 0.045
@@ -251,6 +253,10 @@ private struct CropOverlay: View {
                             if hovering { NSCursor.openHand.push() } else { NSCursor.pop() }
                         }
                         .gesture(moveGesture(canvasSize: geometry.size))
+                        .simultaneousGesture(
+                            TapGesture(count: 2)
+                                .onEnded { onApply() }
+                        )
 
                     ForEach(CropHandle.allCases) { handle in
                         CropHandleView(handle: handle)

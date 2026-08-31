@@ -174,6 +174,7 @@ private struct CropControls: View {
                 Label("点击图片默认框选整张图片".localized, systemImage: "cursorarrow.click")
                 Label("在图片上拖拽可直接框选".localized, systemImage: "rectangle.dashed")
                 Label("拖动选区内部可移动裁切区域".localized, systemImage: "hand.draw")
+                Label("双击裁切区域可直接应用".localized, systemImage: "cursorarrow.click.2")
                 Label("拖动四条边或四角调整范围".localized, systemImage: "arrow.up.left.and.arrow.down.right")
                 if model.cropRatioPreset != .free {
                     Label("调整裁切框时会保持所选比例".localized, systemImage: "aspectratio")
