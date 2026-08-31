@@ -74,6 +74,7 @@
 "点击图片默认框选整张图片" = "Click the image to select the full image";
 "在图片上拖拽可直接框选" = "Drag on the image to draw a crop area";
 "拖动选区内部可移动裁切区域" = "Drag inside the selection to move it";
+"双击裁切区域可直接应用" = "Double-click the crop area to apply it";
 "拖动四条边或四角调整范围" = "Drag an edge or corner to resize";
 "调整裁切框时会保持所选比例" = "The selected ratio is preserved while resizing";
 "应用裁切" = "Apply Crop";
