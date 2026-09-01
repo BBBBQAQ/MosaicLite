@@ -25,12 +25,19 @@ enum ImageProcessor {
         let normalized = normalizedRect.standardized.intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
         guard normalized.width > 0, normalized.height > 0 else { return nil }
 
-        // 画布坐标从左上角开始，CGImage 裁切坐标从左下角开始。
+        // 画布与 CGImage.cropping(to:) 都使用左上角作为像素原点。
+        // 分别向外取整两条边，避免单独取整宽高造成 1 像素错位。
+        let pixelWidth = CGFloat(source.width)
+        let pixelHeight = CGFloat(source.height)
+        let minX = floor(normalized.minX * pixelWidth)
+        let minY = floor(normalized.minY * pixelHeight)
+        let maxX = ceil(normalized.maxX * pixelWidth)
+        let maxY = ceil(normalized.maxY * pixelHeight)
         let pixelRect = CGRect(
-            x: (normalized.minX * CGFloat(source.width)).rounded(),
-            y: ((1 - normalized.maxY) * CGFloat(source.height)).rounded(),
-            width: (normalized.width * CGFloat(source.width)).rounded(),
-            height: (normalized.height * CGFloat(source.height)).rounded()
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
         )
         guard let cropped = source.cropping(to: pixelRect) else { return nil }
         return NSImage(
