@@ -359,6 +359,25 @@ struct ImageProcessorTests {
         #expect(result.pixelSize == CGSize(width: 100, height: 60))
     }
 
+    @Test("裁切位置与画布选区一致")
+    func cropUsesTopLeftCanvasCoordinates() throws {
+        let source = makeVerticallySplitImage(width: 100, height: 100)
+        let result = try #require(
+            ImageProcessor.crop(
+                source,
+                normalizedRect: CGRect(x: 0, y: 0, width: 1, height: 0.5)
+            )
+        )
+        let cgImage = try #require(result.cgImageValue)
+        let color = try #require(
+            NSBitmapImageRep(cgImage: cgImage)
+                .colorAt(x: cgImage.width / 2, y: cgImage.height / 2)?
+                .usingColorSpace(.deviceRGB)
+        )
+
+        #expect(color.blueComponent > color.redComponent)
+    }
+
     @Test("应用裁切后隐藏裁切框")
     @MainActor
     func applyingCropClearsSelection() {
@@ -416,6 +435,17 @@ struct ImageProcessorTests {
         image.lockFocus()
         color.setFill()
         NSRect(x: 0, y: 0, width: width, height: height).fill()
+        image.unlockFocus()
+        return image
+    }
+
+    private func makeVerticallySplitImage(width: Int, height: Int) -> NSImage {
+        let image = NSImage(size: NSSize(width: width, height: height))
+        image.lockFocus()
+        NSColor.systemRed.setFill()
+        NSRect(x: 0, y: 0, width: width, height: height / 2).fill()
+        NSColor.systemBlue.setFill()
+        NSRect(x: 0, y: height / 2, width: width, height: height / 2).fill()
         image.unlockFocus()
         return image
     }
