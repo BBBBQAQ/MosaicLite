@@ -52,7 +52,11 @@ chmod +x "$app_dir/Contents/MacOS/MosaicLite"
 
 # Finder 与云盘扩展属性会在压缩时变成 ._* 文件，并使签名失效。
 xattr -cr "$app_dir"
-xattr -d com.apple.FinderInfo "$app_dir" 2>/dev/null || true
+while IFS= read -r item; do
+  xattr -d com.apple.FinderInfo "$item" 2>/dev/null || true
+  xattr -d com.apple.ResourceFork "$item" 2>/dev/null || true
+  xattr -d 'com.apple.fileprovider.fpfs#P' "$item" 2>/dev/null || true
+done < <(find "$app_dir" -depth)
 
 codesign --force --sign - "$app_dir"
 codesign --verify --deep --strict --verbose=2 "$app_dir"
