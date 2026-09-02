@@ -64,7 +64,15 @@ final class EditorModel: ObservableObject {
     private var previewRequestID = UUID()
 
     var selectedImage: NSImage? {
-        images.first(where: { $0.id == selectedID })?.image ?? images.first?.image
+        selectedItem?.image
+    }
+
+    var selectedItem: ImageItem? {
+        images.first(where: { $0.id == selectedID }) ?? images.first
+    }
+
+    var selectedImportedFileSize: Int64? {
+        selectedItem?.importedFileSize
     }
 
     var sourcePixelSize: CGSize {
@@ -104,7 +112,11 @@ final class EditorModel: ObservableObject {
     func importURLs(_ urls: [URL], behavior: ImageImportBehavior? = nil) {
         let additions = urls.compactMap { url -> ImageItem? in
             guard let image = NSImage(contentsOf: url) else { return nil }
-            return ImageItem(image: image, name: url.deletingPathExtension().lastPathComponent)
+            return ImageItem(
+                image: image,
+                name: url.deletingPathExtension().lastPathComponent,
+                importedFileSize: fileSize(of: url)
+            )
         }
         importItems(additions, behavior: behavior)
     }
@@ -128,23 +140,56 @@ final class EditorModel: ObservableObject {
         }
         let fileItems = imageURLs.compactMap { url -> ImageItem? in
             guard let image = NSImage(contentsOf: url) else { return nil }
-            return ImageItem(image: image, name: url.deletingPathExtension().lastPathComponent)
+            return ImageItem(
+                image: image,
+                name: url.deletingPathExtension().lastPathComponent,
+                importedFileSize: fileSize(of: url)
+            )
         }
         if !fileItems.isEmpty {
             importItems(fileItems, behavior: behavior)
             return true
         }
 
-        let image = pasteboard.data(forType: .png).flatMap(NSImage.init(data:))
-            ?? pasteboard.data(forType: .tiff).flatMap(NSImage.init(data:))
-            ?? NSImage(pasteboard: pasteboard)
-        guard let image else { return false }
-        importPastedImage(image, behavior: behavior)
+        if let data = pasteboard.data(forType: .png), let image = NSImage(data: data) {
+            importPastedImage(image, importedFileSize: Int64(data.count), behavior: behavior)
+            return true
+        }
+        if let data = pasteboard.data(forType: .tiff), let image = NSImage(data: data) {
+            importPastedImage(image, importedFileSize: Int64(data.count), behavior: behavior)
+            return true
+        }
+        guard let image = NSImage(pasteboard: pasteboard) else { return false }
+        importPastedImage(
+            image,
+            importedFileSize: image.tiffRepresentation.map { Int64($0.count) },
+            behavior: behavior
+        )
         return true
     }
 
-    func importPastedImage(_ image: NSImage, behavior: ImageImportBehavior? = nil) {
-        importItems([ImageItem(image: image, name: "剪贴板图片".localized)], behavior: behavior)
+    func importPastedImage(
+        _ image: NSImage,
+        importedFileSize: Int64? = nil,
+        behavior: ImageImportBehavior? = nil
+    ) {
+        importItems(
+            [
+                ImageItem(
+                    image: image,
+                    name: "剪贴板图片".localized,
+                    importedFileSize: importedFileSize
+                )
+            ],
+            behavior: behavior
+        )
+    }
+
+    private func fileSize(of url: URL) -> Int64? {
+        guard let values = try? url.resourceValues(forKeys: [.fileSizeKey]),
+              let size = values.fileSize
+        else { return nil }
+        return Int64(size)
     }
 
     private func importItems(_ additions: [ImageItem], behavior: ImageImportBehavior?) {

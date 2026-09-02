@@ -131,6 +131,7 @@ struct ImageItem: Identifiable {
     let id = UUID()
     var image: NSImage
     var name: String
+    var importedFileSize: Int64? = nil
 }
 
 struct MosaicStroke: Identifiable, Sendable {

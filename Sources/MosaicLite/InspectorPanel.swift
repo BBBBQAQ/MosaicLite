@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct InspectorPanel: View {
@@ -97,6 +98,11 @@ private struct ResizeControls: View {
                 text: "\(Int(model.sourcePixelSize.width)) × \(Int(model.sourcePixelSize.height)) px"
             )
 
+            InfoCard(
+                icon: "externaldrive",
+                text: L10n.format("原始文件大小：%@", importedFileSizeText)
+            )
+
             PrimaryAction(
                 title: model.resizeBatchMode ? "批量应用尺寸" : "应用尺寸",
                 icon: "checkmark"
@@ -105,6 +111,11 @@ private struct ResizeControls: View {
             }
             .disabled(model.selectedImage == nil)
         }
+    }
+
+    private var importedFileSizeText: String {
+        guard let bytes = model.selectedImportedFileSize else { return "—" }
+        return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 }
 
