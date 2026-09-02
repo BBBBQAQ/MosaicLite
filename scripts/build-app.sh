@@ -51,14 +51,27 @@ cp "$asset_build_dir/Assets.car" "$app_dir/Contents/Resources/Assets.car"
 chmod +x "$app_dir/Contents/MacOS/MosaicLite"
 
 # Finder 与云盘扩展属性会在压缩时变成 ._* 文件，并使签名失效。
-xattr -cr "$app_dir"
-while IFS= read -r item; do
-  xattr -d com.apple.FinderInfo "$item" 2>/dev/null || true
-  xattr -d com.apple.ResourceFork "$item" 2>/dev/null || true
-  xattr -d 'com.apple.fileprovider.fpfs#P' "$item" 2>/dev/null || true
-done < <(find "$app_dir" -depth)
+clean_extended_attributes() {
+  xattr -cr "$app_dir"
+  while IFS= read -r item; do
+    xattr -d com.apple.FinderInfo "$item" 2>/dev/null || true
+    xattr -d com.apple.ResourceFork "$item" 2>/dev/null || true
+    xattr -d 'com.apple.fileprovider.fpfs#P' "$item" 2>/dev/null || true
+  done < <(find "$app_dir" -depth)
+}
 
-codesign --force --sign - "$app_dir"
+signed=false
+for _ in 1 2 3; do
+  clean_extended_attributes
+  if codesign --force --sign - "$app_dir"; then
+    signed=true
+    break
+  fi
+done
+if [[ "$signed" != true ]]; then
+  echo "错误：清理扩展属性后仍无法签名应用" >&2
+  exit 1
+fi
 codesign --verify --deep --strict --verbose=2 "$app_dir"
 file "$app_dir/Contents/MacOS/MosaicLite"
 echo "$app_dir"
