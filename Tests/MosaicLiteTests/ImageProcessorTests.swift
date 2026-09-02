@@ -209,11 +209,32 @@ struct ImageProcessorTests {
         let source = makeImage(width: 72, height: 48, color: .systemTeal)
         let model = EditorModel()
 
-        model.importPastedImage(source)
+        model.importPastedImage(source, importedFileSize: 12_345)
 
         #expect(model.images.count == 1)
         #expect(model.images.first?.name == "剪贴板图片".localized)
+        #expect(model.selectedImportedFileSize == 12_345)
         #expect(model.selectedImage?.pixelSize == CGSize(width: 72, height: 48))
+    }
+
+    @Test("文件导入会记录原始文件大小")
+    @MainActor
+    func importedFileKeepsOriginalByteCount() throws {
+        let source = makeImage(width: 32, height: 24, color: .systemPink)
+        let cgImage = try #require(source.cgImageValue)
+        let data = try #require(
+            NSBitmapImageRep(cgImage: cgImage)
+                .representation(using: .png, properties: [:])
+        )
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MosaicLite-file-size-\(UUID().uuidString).png")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let model = EditorModel()
+        model.importURLs([url])
+
+        #expect(model.selectedImportedFileSize == Int64(data.count))
     }
 
     @Test("拼接模式粘贴图片会追加")
