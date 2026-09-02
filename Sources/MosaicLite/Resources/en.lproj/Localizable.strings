@@ -61,6 +61,7 @@
 "锁定宽高比" = "Lock Aspect Ratio";
 "缩放比例" = "Scale";
 "输入 1–1000 之间的百分比" = "Enter a percentage from 1 to 1000";
+"原始文件大小：%@" = "Original file size: %@";
 "批量应用尺寸" = "Resize All Images";
 "应用尺寸" = "Apply Resize";
 
