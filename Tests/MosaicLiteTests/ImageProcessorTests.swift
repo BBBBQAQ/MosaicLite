@@ -52,7 +52,7 @@ struct ImageProcessorTests {
         let result = try #require(
             ImageProcessor.stitch(images, direction: .horizontal, spacing: 10, background: .white)
         )
-        #expect(result.pixelSize == CGSize(width: 90, height: 40))
+        #expect(result.pixelSize == CGSize(width: 75, height: 20))
     }
 
     @Test("纵向拼接尺寸正确")
@@ -64,7 +64,43 @@ struct ImageProcessorTests {
         let result = try #require(
             ImageProcessor.stitch(images, direction: .vertical, spacing: 6, background: .white)
         )
-        #expect(result.pixelSize == CGSize(width: 50, height: 66))
+        #expect(result.pixelSize == CGSize(width: 30, height: 58))
+    }
+
+    @Test("横向拼接等比缩放到相同高度")
+    func horizontalStitchScalesToEqualHeights() throws {
+        let images = [
+            makeImage(width: 10, height: 8, color: .systemRed),
+            makeImage(width: 10, height: 20, color: .systemGreen)
+        ]
+        let result = try #require(
+            ImageProcessor.stitch(images, direction: .horizontal, spacing: 0, background: .white)
+        )
+        let bitmap = NSBitmapImageRep(cgImage: try #require(result.cgImageValue))
+        let firstTopEdge = try #require(bitmap.colorAt(x: 5, y: 0))
+        let firstBottomEdge = try #require(bitmap.colorAt(x: 5, y: 7))
+
+        #expect(result.pixelSize == CGSize(width: 14, height: 8))
+        #expect(firstTopEdge.greenComponent < 0.9)
+        #expect(firstBottomEdge.greenComponent < 0.9)
+    }
+
+    @Test("纵向拼接等比缩放到相同宽度")
+    func verticalStitchScalesToEqualWidths() throws {
+        let images = [
+            makeImage(width: 8, height: 10, color: .systemRed),
+            makeImage(width: 20, height: 10, color: .systemGreen)
+        ]
+        let result = try #require(
+            ImageProcessor.stitch(images, direction: .vertical, spacing: 0, background: .white)
+        )
+        let bitmap = NSBitmapImageRep(cgImage: try #require(result.cgImageValue))
+        let topLeftEdge = try #require(bitmap.colorAt(x: 0, y: 2))
+        let topRightEdge = try #require(bitmap.colorAt(x: 7, y: 2))
+
+        #expect(result.pixelSize == CGSize(width: 8, height: 14))
+        #expect(topLeftEdge.greenComponent < 0.9)
+        #expect(topRightEdge.greenComponent < 0.9)
     }
 
     @Test("横向拼接图片不会互相覆盖")
