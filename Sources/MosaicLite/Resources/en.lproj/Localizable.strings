@@ -110,7 +110,7 @@
 "%d 张" = "%d";
 
 "图片拼接" = "Stitch Images";
-"拖动列表调整顺序，再合并为一张工作图" = "Reorder images, then combine them into one";
+"拖动调整顺序，图片会等比缩放并对齐边缘" = "Reorder images; they scale proportionally to align their edges";
 "方向" = "Direction";
 "图片间距" = "Image Spacing";
 "背景颜色" = "Background Color";
