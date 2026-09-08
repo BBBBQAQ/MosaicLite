@@ -365,14 +365,30 @@ enum ImageProcessor {
         let cgImages = images.compactMap(\.cgImageValue)
         guard !cgImages.isEmpty else { return nil }
 
-        // 所有位置使用整数像素，避免连续导入不同尺寸图片时因小数取整产生覆盖。
+        // 以最小交叉边为基准等比缩小，既让两侧边缘完整对齐，也避免放大低分辨率图片。
+        let renderSizes: [(width: Int, height: Int)]
+        if direction == .horizontal {
+            let targetHeight = cgImages.map(\.height).min()!
+            renderSizes = cgImages.map { image in
+                let scale = CGFloat(targetHeight) / CGFloat(image.height)
+                return (max(1, Int((CGFloat(image.width) * scale).rounded())), targetHeight)
+            }
+        } else {
+            let targetWidth = cgImages.map(\.width).min()!
+            renderSizes = cgImages.map { image in
+                let scale = CGFloat(targetWidth) / CGFloat(image.width)
+                return (targetWidth, max(1, Int((CGFloat(image.height) * scale).rounded())))
+            }
+        }
+
+        // 所有位置使用整数像素，避免小数取整产生重叠或细缝。
         let gap = max(0, Int(spacing.rounded()))
         let width = direction == .horizontal
-            ? cgImages.reduce(0) { $0 + $1.width } + gap * max(0, cgImages.count - 1)
-            : cgImages.map(\.width).max()!
+            ? renderSizes.reduce(0) { $0 + $1.width } + gap * max(0, renderSizes.count - 1)
+            : renderSizes[0].width
         let height = direction == .vertical
-            ? cgImages.reduce(0) { $0 + $1.height } + gap * max(0, cgImages.count - 1)
-            : cgImages.map(\.height).max()!
+            ? renderSizes.reduce(0) { $0 + $1.height } + gap * max(0, renderSizes.count - 1)
+            : renderSizes[0].height
 
         guard let context = CGContext(
             data: nil,
@@ -387,23 +403,23 @@ enum ImageProcessor {
         context.fill(CGRect(x: 0, y: 0, width: CGFloat(width), height: CGFloat(height)))
 
         var offset = 0
-        for image in cgImages {
+        for (image, renderSize) in zip(cgImages, renderSizes) {
             let origin: CGPoint
             if direction == .horizontal {
-                origin = CGPoint(x: CGFloat(offset), y: CGFloat((height - image.height) / 2))
-                offset += image.width + gap
+                origin = CGPoint(x: CGFloat(offset), y: 0)
+                offset += renderSize.width + gap
             } else {
                 origin = CGPoint(
-                    x: CGFloat((width - image.width) / 2),
-                    y: CGFloat(height - offset - image.height)
+                    x: 0,
+                    y: CGFloat(height - offset - renderSize.height)
                 )
-                offset += image.height + gap
+                offset += renderSize.height + gap
             }
             context.draw(
                 image,
                 in: CGRect(
                     origin: origin,
-                    size: CGSize(width: image.width, height: image.height)
+                    size: CGSize(width: renderSize.width, height: renderSize.height)
                 )
             )
         }

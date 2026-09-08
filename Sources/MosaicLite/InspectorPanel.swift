@@ -439,7 +439,7 @@ private struct StitchControls: View {
 
     var body: some View {
         Group {
-            PanelHeader(title: "图片拼接", subtitle: "拖动列表调整顺序，再合并为一张工作图")
+            PanelHeader(title: "图片拼接", subtitle: "拖动调整顺序，图片会等比缩放并对齐边缘")
 
             Picker("方向".localized, selection: $model.stitchDirection) {
                 ForEach(StitchDirection.allCases) { Text($0.localizedName).tag($0) }
