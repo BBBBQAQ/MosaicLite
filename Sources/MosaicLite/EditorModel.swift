@@ -62,6 +62,21 @@ final class EditorModel: ObservableObject {
     private var future: [EditorSnapshot] = []
     private var previewTask: Task<Void, Never>?
     private var previewRequestID = UUID()
+    private var lastExportDirectory: URL?
+
+    static func availableExportURL(name: String, directory: URL) -> URL {
+        let safeName = name.replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let base = L10n.format("%@-处理后", safeName.isEmpty ? "MosaicLite" : safeName)
+        var candidate = directory.appendingPathComponent(base + ".png")
+        var suffix = 2
+        while FileManager.default.fileExists(atPath: candidate.path) {
+            candidate = directory.appendingPathComponent("\(base)-\(suffix).png")
+            suffix += 1
+        }
+        return candidate
+    }
 
     var selectedImage: NSImage? {
         selectedItem?.image
@@ -651,7 +666,13 @@ final class EditorModel: ObservableObject {
         guard let outputImage, let cgImage = outputImage.cgImageValue else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png, .jpeg]
-        panel.nameFieldStringValue = "MosaicLite-导出.png".localized
+        let directory = lastExportDirectory ?? panel.directoryURL
+            ?? FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+        let name = tool == .stitch && images.count > 1
+            ? "拼接图".localized : (selectedItem?.name ?? "MosaicLite")
+        let suggestedURL = Self.availableExportURL(name: name, directory: directory)
+        panel.directoryURL = directory
+        panel.nameFieldStringValue = suggestedURL.lastPathComponent
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
@@ -667,6 +688,7 @@ final class EditorModel: ObservableObject {
         }
         do {
             try data.write(to: url, options: .atomic)
+            lastExportDirectory = url.deletingLastPathComponent()
         } catch {
             exportErrorMessage = L10n.format("无法保存图片：%@", error.localizedDescription)
         }
@@ -681,14 +703,12 @@ final class EditorModel: ObservableObject {
         guard panel.runModal() == .OK, let directory = panel.url else { return }
 
         var failedNames: [String] = []
-        for (index, item) in images.enumerated() {
+        for item in images {
             guard let cgImage = item.image.cgImageValue else {
                 failedNames.append(item.name)
                 continue
             }
-            let safeName = item.name.replacingOccurrences(of: "/", with: "-")
-            let filename = L10n.format("%@-处理后-%d.png", safeName, index + 1)
-            let url = directory.appendingPathComponent(filename)
+            let url = Self.availableExportURL(name: item.name, directory: directory)
             let representation = NSBitmapImageRep(cgImage: cgImage)
             guard let data = representation.representation(using: .png, properties: [:]) else {
                 failedNames.append(item.name)
