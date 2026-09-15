@@ -123,6 +123,7 @@
 "剪贴板图片" = "Clipboard Image";
 "拼接图" = "Stitched Image";
 "MosaicLite-导出.png" = "MosaicLite-Export.png";
+"%@-处理后" = "%@-Edited";
 "无法生成图片数据，请尝试更换导出格式。" = "Could not generate image data. Try another export format.";
 "无法保存图片：%@" = "Could not save the image: %@";
 "选择导出文件夹" = "Choose Export Folder";
